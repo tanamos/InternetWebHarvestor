@@ -21,6 +21,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.NumberFormat;
 import java.util.Collection;
+import java.util.Date;
 import java.util.Map;
 
 import org.apache.commons.lang.StringUtils;
@@ -33,7 +34,11 @@ import org.carrot2.core.attribute.CommonAttributesDescriptor;
  * Simple console formatter for dumping {@link ProcessingResult}.
  */
 public class ConsoleFormatter
-{
+{   static int count = 0;
+static SQLManager connection = new SQLManager();
+	static Connection conn = connection.getConnection();
+	static ResultSet rs = null;
+	static PreparedStatement ps = null;
     public static void displayResults(ProcessingResult processingResult)
     {
         final Collection<Document> documents = processingResult.getDocuments();
@@ -92,19 +97,21 @@ public class ConsoleFormatter
             ClusterDetailsFormatter.INSTANCE);
     }
 
-    public static void displayClusters(final Collection<Cluster> clusters,
+    @SuppressWarnings("deprecation")
+	public static void displayClusters(final Collection<Cluster> clusters,
         int maxNumberOfDocumentsToShow, ClusterDetailsFormatter clusterDetailsFormatter)
     {
-        System.out.println("\n\nCreated " + clusters.size() + " clusters\n"); // First Print out Created 2 clusters
-    	String text = "\n\nCreated " + clusters.size() + " clusters\n";
+        //System.out.println("\n\nCreated " + clusters.size() + " clusters\n"); // First Print out Created 2 clusters
+    	//String text = "\n\nCreated " + clusters.size() + " clusters\n";
         try
     	{
     	    String filename= "MyFile.txt";
     	    FileWriter fw = new FileWriter(filename,true); //the true will append the new data
     	    fw.write("\n\nCreated " + clusters.size() + " clusters\n");//appends the string to the file
+    	    String ClusterTitle = "\n\nCreated " + clusters.size() + " clusters\n";
     	    fw.close();
     	
-    	
+    	    Date date = new Date();
     	SQLManager connection = new SQLManager();
         Connection conn = connection.getConnection();
         ResultSet rs = null;
@@ -113,14 +120,16 @@ public class ConsoleFormatter
                 try {
                 	
                 	
-					ps = conn.prepareStatement("INSERT INTO Cluster1 (cluster,role) VALUES (?,?)");
-					ps.setString(1, text);
-					ps.setString(2, "Cluster");
+					ps = conn.prepareStatement("INSERT INTO clusters (idClusters,dataCreated,ClusterTitle) VALUES (?,?,?)");
+					ps.setInt(1, 1);
+					ps.setString(2, date.toGMTString());
+					ps.setString(3, ClusterTitle);
                
                     ps.executeUpdate();
 			
 				} catch (SQLException e) {
 					// TODO Auto-generated catch block
+					System.out.print("SQL Error"+e);
 					e.printStackTrace();
 				}
                 
@@ -142,38 +151,57 @@ public class ConsoleFormatter
     {
         final String indent = getIndent(level);
 
-        System.out.printf(indent + "[%2d] ", document.getId()); //3rd // Document Number
-        String data = ""+document.getId();
+        //System.out.printf(indent + "[%2d] ", document.getId()); //3rd // Document Number
+        String data3 = ""+document.getId();
         
         
         try
     	{
     	    String filename= "MyFile.txt";
     	    FileWriter fw = new FileWriter(filename,true); //the true will append the new data
-    	    fw.write("["+data+"]"+System.getProperty("line.separator"));
+    	    fw.write("["+data3+"]"+System.getProperty("line.separator"));
     	    
     	    fw.close();
     	}catch(Exception ex){
     		
     	}
-        System.out.println(document.getField(Document.TITLE)); //URL
+        //System.out.println(document.getField(Document.TITLE)); //URL
         
        // String url = document.getField(Document.TITLE);
-        final String url = document.getField(Document.CONTENT_URL); // Snippet
+        final String url = document.getField(Document.TITLE); // Snippet
         
-        System.out.println(indent +document.getField(Document.SUMMARY)); // URL Title
-        String title = indent +document.getField(Document.CONTENT_URL);
+       // System.out.println(indent +document.getField(Document.SUMMARY));
+        String title = indent +document.getField(Document.CONTENT_URL); // URL Title
        if (StringUtils.isNotBlank(url))
         {
-            System.out.println(indent + "     " + url);
+            //System.out.println(indent + "     " + url);
         }
     	try 
     	{
     	    String filename= "MyFile.txt";
     	    FileWriter fw = new FileWriter(filename,true); //the true will append the new data
     	    fw.write("Url: " +url + System.getProperty("line.separator") +"Title: "+ title + System.getProperty("line.separator"));
-    	    
     	    fw.close();
+    	    
+  try {
+            	
+    	    	
+    	   
+				ps = conn.prepareStatement("INSERT INTO clusterdata (idClusterSector,DocNum,DocUrl,DocTitle) VALUES (?,?,?,?)");
+				
+				ps.setInt(1,count );
+				ps.setInt(2,document.getId());
+				ps.setString(3, url);
+				ps.setString(4, title);
+           
+                ps.executeUpdate();
+		
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				System.out.print("SQL Error"+e);
+				e.printStackTrace();
+			}
+    	    
     	}catch(Exception ex){
     		
     	}
@@ -183,7 +211,9 @@ public class ConsoleFormatter
 
     private static void displayCluster(final int level, String tag, Cluster cluster,
         int maxNumberOfDocumentsToShow, ClusterDetailsFormatter clusterDetailsFormatter)
+    
     {
+    	  
         final String label = cluster.getLabel();
 
         // indent up to level and display this cluster's description phrase
@@ -191,13 +221,37 @@ public class ConsoleFormatter
         {
             System.out.print("  ");
         }
-        System.out.println(label + "  "+ clusterDetailsFormatter.formatClusterDetails(cluster)); // 2nd Prints VR-Zone  (6 docs, score: 0.56)
+        //System.out.println(label + "  "+ clusterDetailsFormatter.formatClusterDetails(cluster)); // 2nd Prints VR-Zone  (6 docs, score: 0.56)
     	try
     	{
     	    String filename= "MyFile.txt";
     	    FileWriter fw = new FileWriter(filename,true); //the true will append the new data
     	    fw.write(label + "  "+ clusterDetailsFormatter.formatClusterDetails(cluster)+"HAHA"+ System.getProperty("line.separator"));
-    	   
+    	   String ClusterTitle = label + "  "+ clusterDetailsFormatter.formatClusterDetails(cluster)+"HAHA"+ System.getProperty("line.separator");
+    	
+    	    try {
+            	
+    	    	SQLManager connection = new SQLManager();
+    	        Connection conn = connection.getConnection();
+    	        ResultSet rs = null;
+    	        PreparedStatement ps = null;
+    	        count++;
+				ps = conn.prepareStatement("INSERT INTO clustersector (idClusterSector,idClusters,SectorClusterTitle) VALUES (?,?,?)");
+				
+				ps.setInt(1, count);
+				ps.setInt(2,1);
+				ps.setString(3, ClusterTitle);
+           
+                ps.executeUpdate();
+		
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				System.out.print("SQL Error"+e);
+				e.printStackTrace();
+			}
+    	    
+    	    
+    	    
     	    fw.close();
     	}catch(Exception ex){
     		
@@ -220,8 +274,8 @@ public class ConsoleFormatter
         if (maxNumberOfDocumentsToShow > 0
             && (cluster.getDocuments().size() > documentsShown))
         {
-            System.out.println(getIndent(level + 1) + "... and "
-                + (cluster.getDocuments().size() - documentsShown) + " more\n");
+          //  System.out.println(getIndent(level + 1) + "... and "
+               // + (cluster.getDocuments().size() - documentsShown) + " more\n");
         }
 
         // finally, if this cluster has subclusters, descend into recursion.
